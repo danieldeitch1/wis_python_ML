@@ -1,40 +1,30 @@
-import matplotlib.pyplot as plt
-import numpy as np
-from sklearn.linear_model import LinearRegression
-from sklearn.model_selection import train_test_split
-
 # the analysed data is publicly available and was downlaoded from:
 # 'Diamanti, E. M., Reddy, C. B., Schröder, S., Muzzu, T., Harris, K. D., Saleem, A. B., & Carandini, M. (2021). 
 # Spatial modulation of visual responses arises in cortex with active navigation. Elife, 10, e63705.‏'
 
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+import os
+from ensemble_rate_corr import ensemble_rate_corr
+import numpy as np
+
 # define path for directory containing both 'neuronal_data.npy' and 'trial_info.npy'
-data_path = r'C:\Users\rotaition\Desktop\wis_python'
+data_path = os.path.dirname(__file__)
 
 # load neuronal data of a single mouse recorded from visual area V1
-data = np.load(data_path+'\\neuronal_data.npy')
+data = np.load(os.path.join(data_path, 'neuronal_data.npy'))
 
 # load trial information
-trial_id = np.load(data_path+'\\trial_info.npy')
+trial_id = np.load(os.path.join(data_path, 'trial_info.npy'))
 trial_id = trial_id[:,0]
 
-# define an empty array that will contain the averaged neuronal activity in each trial
-ensemble_rate = np.zeros([len(data),int(max(trial_id))])
-
-# define an array with trial IDs 
-trial_list = np.arange(int(min(trial_id)),int(max(trial_id))+1)
-
-# average the neuronal activity in each trial to create a matrix in the size of n by t (number of neurons by number of trials)
-for trial in np.arange(0,len(trial_list)): # loop over trials
-    current_trial = trial_id == trial_list[trial] 
-    current_trial_activity = data[:,current_trial] # subset activity of a single trial
-    ensemble_rate[:,trial] = current_trial_activity.mean(1) # average the neuronal activity over time for each neuron
-    
-# remove trials with no activity
-valid_trials = ensemble_rate.mean(0) > 0 
-valid_ensemble_rate = ensemble_rate[:,valid_trials] 
+# calculate the averaged activity rate for each neuron in each trial
+valid_ensemble_rate = ensemble_rate_corr(data,trial_id)
 
 # plot the relationship between neuronal activity in trial 2 and neuronal activity in trial 3
 # each dot is a neuron and the values on each axis is the neuronal activity in that trial
+plt.figure()
 plt.scatter(valid_ensemble_rate[:,1],valid_ensemble_rate[:,2])
 plt.xlabel("Neuronal activity in trial 2")
 plt.ylabel("Neuronal activity in trial 3")
@@ -62,6 +52,7 @@ y_pred = model.predict(X_test.reshape(-1, 1))
 
 # scatter plot demonstrating the linear relationship between predicted neuronal 
 # activity by the model and the actual measured neuronal activiy
+plt.figure()
 plt.scatter(y_test,y_pred)
 plt.xlabel("Actual (measured) neuronal activity")
 plt.ylabel("Predicted neuronal activity")
